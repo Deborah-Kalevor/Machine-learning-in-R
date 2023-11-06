@@ -1,449 +1,498 @@
-# ASSESSING THE CHURN RATE OF USERS ON VARIOUS DIGITAL SERVICES
 
-# Importing Data 
-setwd("C:/Users/DEBORAH KALEVOR/Desktop/MSC BDA/SEM 1/Data Science/Deborah Kalevor")
-Internet_Usage<-read.csv("Internetuesersdata.csv")
-Internet_Usage
-View(Internet_Usage)
-
-# Packages necessary for Analysis
-library(ggplot2)
-library(ggraph)
-library(Matrix)
+### DATA SET JOIN ####
+setwd("C:/Users/HP/Desktop/R Assignment")
+set.seed(3085022)
+library(tidymodels)
 library(dplyr)
 
-#Data Structure
-View(Internet_Usage)
-str(Internet_Usage)
-head(Internet_Usage)
-tail(Internet_Usage)
-glimpse(Internet_Usage)
-summary(Internet_Usage)
+### UPLOAD DATA 
+df1<-read.csv("C:/Users/HP/Desktop/R Assignment/Football Database/teams.csv")
+glimpse(df1)
 
-# Data cleaning 
-Internet_Usage1<-Internet_Usage%>%
-  filter(Contract%in%c("Month-to-month","One year","Two year"),
-         InternetService%in%c("DSL","Fiber optic"))
-(Internet_Usage1)
+df2<- read.csv("C:/Users/HP/Desktop/R Assignment/Football Database/teamstats.csv")
+glimpse(df2)
 
+# Perform the left join with the "team ID" column as the join condition
+joined_data <- left_join(df1, df2, by = "teamID", suffix = c(".df1", ".df2"), 
+                              relationship = "many-to-many")
+glimpse(joined_data)
+view(joined_data)
 
-#checking for missing values
-sum(is.na(Internet_Usage1))
+###### CHECKING FOR MISSING VALUES#######
 
-#Remove Missing Numbers
-Internet_Usage_Clean <- na.omit(Internet_Usage1)
-
-
-#Check for removed values
-sum(is.na(Internet_Usage_Clean))
-glimpse(Internet_Usage_Clean)
+# Remove missing values in the data
+data <- na.omit(joined_data)
+ glimpse(data)
+ 
+# Check the number of missing values in the cleaned dataset 'data'
+data_clean <- sum(is.na(data))
+print(data_clean)
 
 
-
-##VISUALIZING CATEGORICAL VARIABLES
-#visualizing data
-#Bar plots of categorical variables
-#install.packages("gridExtra")
+### VISUALIZE THE DATA ####
 library(gridExtra)
+library(ggplot2)
 
 ######GRID 1
-gender <- ggplot(Internet_Usage_Clean, aes(x=gender)) + ggtitle("Gender") + xlab("Gender") +
+Name <- ggplot(joined_data, aes(x=name)) + ggtitle("Team Names") + xlab("Team Names") +
   geom_bar(aes(y = 100*(..count..)/sum(..count..)), width = 0.5) + ylab("Percentage") + coord_flip() + theme_minimal()
 
-PhoneService <- ggplot(Internet_Usage_Clean, aes(x=PhoneService)) + ggtitle("Phone Service") + xlab("Phone Service") +
+Results <- ggplot(joined_data, aes(x=result)) + ggtitle("Performance") + xlab("Performance") +
   geom_bar(aes(y = 100*(..count..)/sum(..count..)), width = 0.5) + ylab("Percentage") + coord_flip() + theme_minimal()
 
-InternetService <- ggplot(Internet_Usage_Clean, aes(x=InternetService)) + ggtitle("Internet Service") + xlab("Internet Service") + 
+Location <- ggplot(joined_data, aes(x=location)) + ggtitle("Game Location") + xlab("Game Location") + 
   geom_bar(aes(y = 100*(..count..)/sum(..count..)), width = 0.5) + ylab("Percentage") + coord_flip() + theme_minimal()
 
-Contract <- ggplot(Internet_Usage_Clean, aes(x=Contract)) + ggtitle("Contract") + xlab("Contract") + 
+grid.arrange(Name, Results, Location,ncol=2)
+
+###### GRID 2
+Goals <- ggplot(joined_data, aes(x=goals)) + ggtitle("Goals Scored") + xlab("Goals Scored") +
   geom_bar(aes(y = 100*(..count..)/sum(..count..)), width = 0.5) + ylab("Percentage") + coord_flip() + theme_minimal()
 
-PaymentMethod <- ggplot(Internet_Usage_Clean, aes(x=PaymentMethod)) + ggtitle("Payment Method") + xlab("Payment Method") +
+Shots <- ggplot(joined_data, aes(x=shots)) + ggtitle("Shots Played") + xlab("Shots Played") +
   geom_bar(aes(y = 100*(..count..)/sum(..count..)), width = 0.5) + ylab("Percentage") + coord_flip() + theme_minimal()
 
-SenoirCitizen <- ggplot(Internet_Usage_Clean, aes(x=SeniorCitizen)) + ggtitle("Senior Citizen") + xlab("Senior Citizen") + 
+Coners <- ggplot(joined_data, aes(x=corners)) + ggtitle("Coners Played") + xlab("Coners Played") + 
   geom_bar(aes(y = 100*(..count..)/sum(..count..)), width = 0.5) + ylab("Percentage") + coord_flip() + theme_minimal()
 
-grid.arrange(gender, PhoneService, InternetService, Contract, PaymentMethod,SenoirCitizen, ncol=2)
+grid.arrange(Goals, Shots, Coners,ncol=2)
+
+### Grid 3
+Red_cards <- ggplot(joined_data, aes(x=redCards)) + ggtitle("Red cards") + xlab("Red cards") +
+  geom_bar(aes(y = 100*(..count..)/sum(..count..)), width = 0.5) + ylab("Percentage") + coord_flip() + theme_minimal()
+
+Yello_cards <- ggplot(joined_data, aes(x=yellowCards)) + ggtitle("Yello cards") + xlab("Yello cards") +
+  geom_bar(aes(y = 100*(..count..)/sum(..count..)), width = 0.5) + ylab("Percentage") + coord_flip() + theme_minimal()
+
+Fouls <- ggplot(joined_data, aes(x=fouls)) + ggtitle("Fouls") + xlab("Fouls") + 
+  geom_bar(aes(y = 100*(..count..)/sum(..count..)), width = 0.5) + ylab("Percentage") + coord_flip() + theme_minimal()
+
+grid.arrange(Red_cards, Yello_cards, Fouls,ncol=2)
 
 
-#########GRID 2
-Patner <- ggplot(Internet_Usage_Clean, aes(x=Partner)) + ggtitle("Partner") + xlab("Partner") + 
-  geom_bar(aes(y = 100*(..count..)/sum(..count..)), width = 0.5) + ylab("Percentage") + coord_flip() + theme_minimal()
-Dependents <- ggplot(Internet_Usage_Clean, aes(x=Dependents)) + ggtitle("Dependents") + xlab("Dependents") +
-  geom_bar(aes(y = 100*(..count..)/sum(..count..)), width = 0.5) + ylab("Percentage") + coord_flip() + theme_minimal()
-Multiple_Lines <- ggplot(Internet_Usage_Clean, aes(x=MultipleLines)) + ggtitle("Multiple Lines") + xlab("Multiple Lines") + 
-  geom_bar(aes(y = 100*(..count..)/sum(..count..)), width = 0.5) + ylab("Percentage") + coord_flip() + theme_minimal()
-OnlineSecurity <- ggplot(Internet_Usage_Clean, aes(x=OnlineSecurity)) + ggtitle("Online Security") + xlab("Online Security") +
-  geom_bar(aes(y = 100*(..count..)/sum(..count..)), width = 0.5) + ylab("Percentage") + coord_flip() + theme_minimal()
-OnlineBackup <- ggplot(Internet_Usage_Clean, aes(x=OnlineBackup)) + ggtitle("Online Backup") + xlab("Online Backup") +
-  geom_bar(aes(y = 100*(..count..)/sum(..count..)), width = 0.5) + ylab("Percentage") + coord_flip() + theme_minimal()
-DeviceProtection <- ggplot(Internet_Usage_Clean, aes(x=DeviceProtection)) + ggtitle("Device Protection") + xlab("Device Protection") + 
-  geom_bar(aes(y = 100*(..count..)/sum(..count..)), width = 0.5) + ylab("Percentage") + coord_flip() + theme_minimal()
-grid.arrange(Patner, Dependents, Multiple_Lines, OnlineSecurity,OnlineBackup,DeviceProtection, ncol=2)
+# Define the categorical variables to be encoded
+categorical_vars <- c("name", "location", "result")
+
+# Create a copy of the original data
+encoded_data <- data
+
+# Iterate over each categorical variable
+for (var in categorical_vars) {
+  # Get the unique categories in the variable
+  categories <- unique(encoded_data[[var]])
+  
+  # Create a mapping of categories to numerical labels
+  labels <- seq_along(categories)
+  category_mapping <- setNames(labels, categories)
+  
+  # Replace the categorical values with numerical labels in the data
+  encoded_data[[var]] <- category_mapping[encoded_data[[var]]]
+  
+  # Convert the variable back to a factor with the same levels
+  encoded_data[[var]] <- factor(encoded_data[[var]], levels = labels)
+}
+
+glimpse(encoded_data)
+view(encoded_data)
+
+#select a subset of variables of interest to predict results 
+results <- encoded_data%>%
+  select(result,location, goals, shots,shotsOnTarget, fouls,corners, yellowCards,redCards)
+glimpse(results)
 
 
+# Splitting the data 
+results_split <- initial_split(results, prop = 0.7, strata = result)
 
-########GRID 3
-TechSupport <- ggplot(Internet_Usage_Clean, aes(x=TechSupport)) + ggtitle("Tech Support") + xlab("Tech Support") + 
-  geom_bar(aes(y = 100*(..count..)/sum(..count..)), width = 0.5) + ylab("Percentage") + coord_flip() + theme_minimal()
-StreamingTV <- ggplot(Internet_Usage_Clean, aes(x=StreamingTV)) + ggtitle("Streaming TV") + xlab("Streaming TV") +
-  geom_bar(aes(y = 100*(..count..)/sum(..count..)), width = 0.5) + ylab("Percentage") + coord_flip() + theme_minimal()
-StreamingMovies <- ggplot(Internet_Usage_Clean, aes(x=StreamingMovies)) + ggtitle("Streaming Movies") + xlab("Streaming Movies") +
-  geom_bar(aes(y = 100*(..count..)/sum(..count..)), width = 0.5) + ylab("Percentage") + coord_flip() + theme_minimal()
-PaperlessBilling <- ggplot(Internet_Usage_Clean, aes(x=PaperlessBilling)) + ggtitle("Paperless Billing") + xlab("Paperless Billing") + 
-  geom_bar(aes(y = 100*(..count..)/sum(..count..)), width = 0.5) + ylab("Percentage") + coord_flip() + theme_minimal()
-Tenure <- ggplot(Internet_Usage_Clean, aes(x=tenure.Month)) + ggtitle("Tenure") + xlab("Tenure ") +
-  geom_density()
-MonthlyCharges <- ggplot(Internet_Usage_Clean, aes(x=MonthlyCharges)) + ggtitle("Monthly Charges") + xlab("Monthly Charges ") +
-  geom_density()
-grid.arrange(TechSupport, StreamingTV, StreamingMovies, PaperlessBilling,Tenure,MonthlyCharges, ncol=2)
+# Get the training and testing data with stratification based on "Result"
+results_training <- training(results_split)
+results_testing <- testing(results_split)
+
+glimpse(results_testing)
+glimpse(results_training)
+
+################################################################################
+#Building a Feature Engineering Pipeline
+
+#Finding Correlated Predictor Variables
+results_training%>%
+  select_if(is.numeric)%>%
+  cor()
+
+#Normalization  and  Removing multi-collinearity
+results_norm <-recipe(result ~.,
+                        data =results_training)%>%
+  step_corr(all_numeric(),threshold = 0.9)%>%
+  step_normalize(all_numeric())
+
+results_norm
+
+#Transforming the Test Data
+results_norm%>%
+  prep(training = results_training)%>%
+  bake(new_data= results_testing)
+
+#Recipe Object
+results_recipe<- recipe(result ~.,
+                       data = results_training)
+#Train Recipe with Prep Function
+results_recipe_prep <- results_recipe%>%
+  prep(training= results_training)
 
 
-##### understanding the data based on some features######
-#Selection of Features for analysis
-Final_internet_usage <- Internet_Usage_Clean%>%
-  select(gender, PhoneService, InternetService, Contract,PaymentMethod,
-         MonthlyCharges,TotalCharges,Churn)
-View(Final_internet_usage)
-glimpse(Final_internet_usage)
+#Preprocess Training Data
+training_prep <- results_recipe_prep%>%
+  bake(new_data = NULL)
 
-# factorizing categorical variables
-Final_internet_usage1 <- within(
-  Final_internet_usage, {
-    gender <- factor(gender, labels = c("Female", "Male"))
-    PhoneService <- factor(PhoneService, labels = c("No","Yes"))
-    InternetService <- factor(InternetService, labels = c("DSL", "Fiber optic"))
-    Contract <- factor(Contract, labels = c("Month-to-month", "One year", "Two year"))
-    PaymentMethod <- factor(PaymentMethod, labels = c("Bank transfer (automatic)",
-                                                      "Credit card(automatic)",
-                                                      "Electronic check",
-                                                      "Mailed check"))
-  })
+glimpse(training_prep)
 
-glimpse(Final_internet_usage1)
+#Pre-process the Test Data
+testing_prep <- results_recipe_prep%>%
+  bake(new_data = results_testing)
 
+glimpse(testing_prep)
 
 ####################################################################################
-##BASIC ANALYSIS USING DPLYR
+# MODELS FITTING 
 
-# Customers who use phone service based by Gender  
-Female_PhoneService<- Final_internet_usage1%>%
-  group_by(gender)%>%
-  filter(gender=="Female")%>%
-  dplyr::count(PhoneService)
-Female_PhoneService
+####### RANDOM FOREST MODEL ##########
 
-Female_PhoneService%>%
-  rename(customers=n)
- 
-
-Male_PhoneService<- Final_internet_usage1%>%
-  group_by(gender)%>%
-  filter(gender=="Male")%>%
-  dplyr::count(PhoneService)
-Male_PhoneService
-
-Male_PhoneService%>%
-  rename(customers=n)
-
-###### Analysis showing a healthy gap of phone service users among both genders.
-
-
-# customers using DSL
-DSL_usage<- Final_internet_usage1%>%
-  filter(InternetService=="DSL")
-DSL_usage
-DSL_usage%>%
-  dplyr::count(InternetService)
-## visualizing
-ggplot(DSL_usage, aes(x = MonthlyCharges, y = TotalCharges, color = InternetService)) +
-  geom_point() +
-  labs(title = "DSL Internet Service Usage",
-       x = "Monthly Charges",
-       y = "Total Charges") +
-  theme_minimal()
-
-# Customers Using Fiber optic
-Fibre_usage<- Final_internet_usage1%>%
-  filter(InternetService=="Fiber optic")
-Fibre_usage
-Fibre_usage%>%
-  dplyr::count(InternetService)
-
-### visualizing
-ggplot(Fibre_usage, aes(x = MonthlyCharges, y = TotalCharges, color = InternetService)) +
-  geom_point() +
-  labs(title = "Fiber Optic Internet Service Usage",
-       x = "Monthly Charges",
-       y = "Total Charges") +
-  theme_minimal()
-
-###### per analysis on internet services we can conclude that most customers 
-#prefer using a fiber optic to a DSL internet service######
-
-
-# customers per contract and Internet service
-Fibre_usage_count <- Final_internet_usage1%>%
-  group_by(Contract,InternetService)%>%
-  dplyr::count(Contract,InternetService)
-Fibre_usage_count
-
-Fibre_usage_count%>%
-  rename(customers=n)
-
-######## Analysis shows that customers prefer the fiber optic internet service 
-# on a monthly charge and DSL has more customer subscription bi-yearly and just a 
-#little less yearly as compared to the monthly subscriptions.###############
-# as compared to fiber optic#################
-
-
-# customers per gender and internet service 
-Gender_usage_count <- Final_internet_usage1%>%
-  group_by(gender,InternetService)%>%
-  dplyr::count(gender,InternetService)
-Gender_usage_count
-
-
-Gender_usage_count%>%
-  rename(customers=n)
-
-## visualizing the info
-ggplot(Gender_usage_count, aes(x = gender, y = n, fill = InternetService)) +
-  geom_bar(stat = "identity", position = "dodge") +
-  labs(title = "Gender and Internet Service Usage Count",
-       x = "Gender",
-       y = "Usage Count") +
-  theme_minimal()
-############### Both genders prefer Fiber optic per the visualization and analysis.
-
-
-#customers with different contact using DSL
-Diff_contract<- Final_internet_usage1%>%
-  group_by(InternetService)%>%
-  filter(InternetService=="DSL")%>%
-  dplyr::count(Contract)
-Diff_contract
-
-Diff_contract%>%
-  rename(customers=n)
-
-# visualizing 
-ggplot(Diff_contract, aes(x = Contract, y = n, fill = Contract)) +
-  geom_bar(stat = "identity") +
-  labs(title = "Contract Count for DSL Internet Service",
-       x = "Contract Type",
-       y = "Usage Count") +
-  theme_minimal()
-
-#customers with only Monthly contract using DSL
-Only_MonthlyContract<- Final_internet_usage1%>%
-  group_by(Contract)%>%
-  filter(Contract=="Month-to-month",InternetService=="DSL")%>%
-  dplyr::count(InternetService)
-Only_MonthlyContract
-
-Only_MonthlyContract%>%
-  rename(customers=n)
-
-
-#customers using fibre optic with yearly contract
-Only_yearlyContract<- Final_internet_usage1%>%
-  group_by(Contract)%>%
-  filter(Contract=="One year",InternetService=="Fiber optic")%>%
-  dplyr::count(InternetService)
-Only_yearlyContract
-
-Only_yearlyContract%>%
-  rename(customers=n)
-
-
-# mean, maximum and minimum monthly and total charges
-Final_internet_usage1%>%
-  group_by(gender, PaymentMethod)%>%
-  summarise(MeanTotalCharges = mean(TotalCharges),
-            MinimumTotalCharge = min(TotalCharges),
-            MaximumTotalCharge = max(TotalCharges))
-
-Final_internet_usage1%>%
-  group_by(gender, PaymentMethod)%>%
-  summarise(MeanMonthlyCharges = mean(MonthlyCharges),
-            MinimumMonthlyCharge = min(MonthlyCharges),
-            MaximumMonthlyCharge = max(MonthlyCharges))
-
-
-
-
-#########################################################################################
-######## CALCULATING CHURN RATE
-
-#install.packages("MASS")
-#install.packages("ggthemes")
-#install.packages("corrplot")
-#install.packages("caret",dependencies = TRUE)
-#install.packages("party")
-
-
-# packages necessary for analysis.
-library(caret)
-library(plyr)
-library(corrplot)
-library(ggthemes)
-library(MASS)
-library(party)
+# Fit Random Forest Model for result prediction 
 library(randomForest)
+library(caret)
 
-churn <- Internet_Usage
-str(churn)
+rand_model <- randomForest(formula = result ~ .,
+                           data = training_prep,
+                           ntree = 75)
 
-#missing values
-sapply(churn, function(x) sum(is.na(x)))
+# Predict using the random forest model on the testing data
+predict_results <- predict(rand_model, newdata = testing_prep, type = "class")
 
-#remove 8 missing records
-churn <- churn[complete.cases(churn), ]
+# Calculate the confusion matrix
+conf_matrix <- confusionMatrix(predict_results, testing_prep$result)
+print(conf_matrix)
 
-#Re-code columns and changing them to factors
-cols_recode1 <- c(10:15)
-for(i in 1:ncol(churn[,cols_recode1])) {
-  churn[,cols_recode1][,i] <- as.factor(mapvalues
-                   (churn[,cols_recode1][,i], 
-                    from =c("No internet service"),to=c("No")))
+#Important Features in a Random Forest
+randmodel2 <- randomForest(results,
+                           data = results,
+                           ntree = 75,
+                           importance = TRUE)
+
+randmodel2
+
+# visualize 
+randomForest::varImpPlot(rand_model,
+                         sort= TRUE,
+                         main="Variable Importance Plot")
+
+###########################################
+#  CALCULATING THE AUC ROC CURVE 
+library(pROC)
+
+# Get unique class labels
+class_labels <- unique(testing_prep$result)
+
+# Function to convert multiclass to binary for a specific class
+convert_to_binary <- function(class_label, actual_labels) {
+  binary_labels <- ifelse(actual_labels == class_label, "Positive", "Negative")
+  return(factor(binary_labels, levels = c("Positive", "Negative")))
 }
 
 
-churn$MultipleLines <- as.factor(mapvalues(churn$MultipleLines, 
-                                           from=c("No phone service"),
-                                           to=c("No")))
+# Calculate ROC curves and AUC values for each class
+roc_curves <- lapply(class_labels, function(class_label) {
+  binary_actual <- convert_to_binary(class_label, testing_prep$result)
+  binary_predicted <- convert_to_binary(class_label, predict_results)
+  return(roc(binary_actual, as.numeric(binary_predicted)))
+})
 
-########### grouping tenure into tenure groups in a different column #######
+# Plot ROC curves for each class
+plot(roc_curves[[1]], col = "blue", main = "ROC Curves for Random Forest", lwd = 2)
+for (i in 2:length(roc_curves)) {
+  plot(roc_curves[[i]], add = TRUE, col = rainbow(length(class_labels))[i], lwd = 2)
+}
+
+# Calculate macro-average AUC value
+auc_values <- sapply(roc_curves, function(x) x$auc)
+macro_auc_value <- mean(auc_values)
+
+# Print macro-average AUC value
+cat("Macro-average AUC-ROC value:", macro_auc_value, "\n")
+
+# Add diagonal reference line for random classification
+abline(a = 0, b = 1, lty = 2, col = "gray")
+
+# Add legend
+legend("bottomright", legend = paste("Class", class_labels, "AUC =", 
+              round(auc_values, 2)), col = rainbow(length(class_labels)), lwd = 2)
+
+
+
+######################################################################################
+###  K NEAREST NEIGHBOR
+library(class)
+
+#Pre-processing 
+sum(is.na(joined_data))
+
+KNN_clean<- sum(complete.cases(joined_data))
+
+glimpse(KNN_clean)
+
+#Count the number of signs of each type
+table(joined_data$result)
+
+# Define the categorical variables to be encoded
+categorical_vars <- c("name", "location")
+
+# Create a copy of the original data
+KNN_encoded_data <- joined_data
+
+# Iterate over each categorical variable
+for (var in categorical_vars) {
+  # Get the unique categories in the variable
+  categories <- unique(KNN_encoded_data[[var]])
+  
+  # Create a mapping of categories to numerical labels
+  labels <- seq_along(categories)
+  category_mapping <- setNames(labels, categories)
+  
+  # Replace the categorical values with numerical labels in the data
+  KNN_encoded_data[[var]] <- category_mapping[KNN_encoded_data[[var]]]
+  
+  # Convert the variable back to a factor with the same levels
+  KNN_encoded_data[[var]] <- factor(KNN_encoded_data[[var]], levels = labels)
+}
+
+glimpse(KNN_encoded_data)
+
+#select a subset of variables of interest to predict results 
+KNN_results <- KNN_encoded_data%>%
+  select(result,location, goals, shots,shotsOnTarget, fouls,corners, yellowCards,redCards)
+glimpse(KNN_results)
+
+# Splitting the data 
+KNN_results_split <- initial_split(KNN_results, prop = 0.7, strata = result)
+
+# Get the training and testing data with stratification based on "Result"
+KNN_results_training <- training(KNN_results_split)
+KNN_results_testing <- testing(KNN_results_split)
+
+glimpse(KNN_results_testing)
+glimpse(KNN_results_training)
+
+KNN_results_training <- na.omit(KNN_results_training)
+glimpse(KNN_results_training)
+
+#Create Train Labels
+train_labels <- KNN_results_training$result
+
+#Fit KNN Model
+results_Pred <-knn(train = KNN_results_training[-1], test = KNN_results_testing[-1], cl= train_labels )
+results_Pred
+
+results_actual <- KNN_results_testing$result
+ results_actual
+
+#Create a Confusion Matrix
+ conf_matrix <- table(results_Pred, results_actual)
  
-#checking the minimum and maximum tenure 
-min(churn$tenure); max(churn$tenure)
+ conf_matrix
+ 
+#TP: 362+1019+1226 =2607
+#FP: (sum of all values in correspomnding columns except TP): (535+372) + (538+345) + (372+304)= 2466
+#FN: (sum of all values in correspomnding rows except TP): (538+372) + (535+304) + (372+345) = 2246
+#TN: 0
 
-group_tenure <- function(tenure){
-  if (tenure >= 0 & tenure <= 12){
-    return('0-12 Month')
-  }else if(tenure > 12 & tenure <= 24){
-    return('12-24 Month')
-  }else if (tenure > 24 & tenure <= 48){
-    return('24-48 Month')
-  }else if (tenure > 48 & tenure <=60){
-    return('48-60 Month')
-  }else if (tenure > 60){
-    return('> 60 Month')
-  }
+#Accuracy
+mean(results_Pred == results_actual)
+
+## VISUALIZATION 
+# Create a heatmap
+heatmap(conf_matrix, 
+        col = cm.colors(256),  
+        scale = "none",        
+        margins = c(5, 10),    
+        main = "Confusion Matrix",
+        xlab = "Actual",
+        ylab = "Predicted")
+
+
+########### AUC ROC CURVE FOR KNN MODEL
+
+# Fit KNN model and predict on the test data
+results_Pred <- knn(train = KNN_results_training[-1], test = KNN_results_testing[-1],
+                    cl = train_labels)
+
+results_actual <- KNN_results_testing$result
+
+# Get unique class labels
+class_labels <- unique(KNN_results$result)
+
+# Convert actual labels to binary for each class
+binary_actuals <- lapply(class_labels, function(class_label, actual_labels) {
+  binary_actual <- ifelse(actual_labels == class_label, 1, 0)
+  return(binary_actual)
+}, actual_labels = results_actual)
+
+# Calculate ROC curves and AUC values for each class
+roc_curves <- lapply(1:length(class_labels), function(i) {
+  roc_obj <- roc(binary_actuals[[i]], as.numeric(results_Pred == class_labels[i]))
+  return(roc_obj)
+})
+
+# Calculate macro-average AUC value
+auc_values <- sapply(roc_curves, function(x) x$auc)
+macro_auc_value <- mean(auc_values, na.rm = TRUE)
+
+# Print macro-average AUC value
+cat("Macro-average AUC-ROC value:", macro_auc_value, "\n")
+
+# Plot ROC curves for each class
+plot(roc_curves[[1]], col = "blue", main = "ROC Curves for KNN Model", lwd = 2)
+for (i in 2:length(roc_curves)) {
+  plot(roc_curves[[i]], add = TRUE, col = rainbow(length(class_labels))[i], lwd = 2)
 }
-churn$tenure_group <- sapply(churn$tenure,group_tenure)
-churn$tenure_group <- as.factor(churn$tenure_group)
- glimpse(churn)
 
-churn$SeniorCitizen <- as.factor(mapvalues(churn$SeniorCitizen,
-                                           from=c("0","1"),
-                                           to=c("No", "Yes")))
-churn$Churn <- as.factor(mapvalues(churn$Churn,
-                                   from=c("No", "Yes"),
-                                   to=c("0","1")))
-#Remove columns we don't need
-churn$customerID <- NULL
-churn$tenure.Month <- NULL
+# Add diagonal reference line for random classification
+abline(a = 0, b = 1, lty = 2, col = "gray")
+
+# Add legend
+legend("bottomright", legend = paste("Class", class_labels, "AUC =", round(auc_values, 2)), col = rainbow(length(class_labels)), lwd = 2)
 
 
 
-#Exploratory data analysis and feature selection
-#Correlation between numerical values, how similar are the numeric values
-numeric.var <- sapply(churn, is.numeric)
-corr.matrix <- cor(churn[,numeric.var])
-corrplot(corr.matrix, main="\n\nCorrelation Plot for Numerical Variables", method="number")
+######## DECISION TREE #############
+library(rpart)
+library(rpart.plot)
+library(party)
 
-#They is a positive correlation between monthly charges and Total Charges,
-# thus we use only one for analysis
-churn$TotalCharges <- NULL
-glimpse(churn)
+# USING THE TRAINING AND TESTING DATA OF KNN
+glimpse(KNN_results_training)
+glimpse(KNN_results_testing)
 
-#Logistic Regression
-#First, we split the data into training and testing sets:
-intrain<- createDataPartition(churn$Churn,p=0.8,list=FALSE)
-# it mostly either 70/30 or 80/20 when training and testing a data
-set.seed(2083)
-training<- churn[intrain,]
-testing<- churn[-intrain,]
-
-#Fitting the Logistic Regression Model:
-LogModel <- glm(Churn ~ .,family=binomial(link="logit"),data=training)# glm is used for logistics regression,
-###meaning churn is a function of all the other columns in the data set, 
-##thus we are using all the columns to analyze churn.
-print(summary(LogModel))
-## for the result, the more star assigned to a feature the more vital it is in churn analysis
-## we can say per the results that Contact, paperless billing and tenure group are the 
-#most vital for the analysis.
+decision_tree_model <- rpart(result ~ ., data = KNN_results_training, method = "class")
 
 
-#Assessing the predictive ability of the Logistic Regression model
-# testing the data to see its accuracy
-#testing$Churn[testing$Churn=="No"] <- "0"
-#testing$Churn[testing$Churn=="Yes"] <- "1"
-fitted.results <- predict(LogModel,newdata=testing,type='response')
-fitted.results <- ifelse(fitted.results > 0.5,1,0)
-misClasificError <- mean(fitted.results != testing$Churn)
-print(paste('Logistic Regression Accuracy',1-misClasificError))# this shows a 79% accuracy
+# predictions using the decision tree model
+predictions <- predict(decision_tree_model, newdata = KNN_results_testing, 
+                       type = "class")
 
-#Odds Ratio
-## we are using the odd ratio to detect the the important columns
-library(MASS)
-exp(cbind(OR=coef(LogModel), confint(LogModel)))
-## this confirms the analysis of the glm function
+# confusion matrix
+actual <- KNN_results_testing$result
+confusion_matrix <- table(predictions, actual)
+print(confusion_matrix)
 
+# accuracy from the confusion matrix
+accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
+print(accuracy)
 
-#Decision Tree
-#Decision Tree visualization
-#per the analysis we are focusing on only Contract ,tenure and paperless billing since these 
-#feature strongly predict churn
-#Convert variables used in model to factors
-training$Contract <- factor(training$Contract)
-training$tenure_group <- factor(training$tenure_group)
-training$PaperlessBilling <- factor(training$PaperlessBilling)
-tree <- ctree(Churn~Contract+tenure_group+PaperlessBilling, training)
-plot(tree)
+# plotting the decision tree model
+rpart.plot(decision_tree_model, extra = 101)
 
 
-#Decision Tree Confusion Matrix
-#Decision Tree Confusion Matrix
-testing$Contract <- factor(testing$Contract)
-testing$tenure_group <- factor(testing$tenure_group)
-testing$PaperlessBilling <- factor(testing$PaperlessBilling)
+#Plotting Decision tree with predictor variables
+training_prep$goals <- factor(training_prep$goals)
+training_prep$shotsOnTarget <- factor(training_prep$shotsOnTarget)
+training_prep$shots <- factor(training_prep$shots)
+tree1 <- ctree(result~goals+shotsOnTarget+shots, training_prep)
+plot(tree1)
 
-pred_tree <- predict(tree, testing)
-print("Confusion Matrix for Decision Tree"); table(Predicted = pred_tree, Actual = testing$Churn)
+training_prep$fouls <- factor(training_prep$fouls)
+training_prep$corners <- factor(training_prep$corners)
+training_prep$yellowCards <- factor(training_prep$yellowCards)
+training_prep$location <- factor(training_prep$location)
+training_prep$redCards <- factor(training_prep$redCards)
 
-#Decision Tree Accuracy
-p1 <- predict(tree, training)
-tab1 <- table(Predicted = p1, Actual = training$Churn)
-tab2 <- table(Predicted = pred_tree, Actual = testing$Churn)
-print(paste('Decision Tree Accuracy',sum(diag(tab2))/sum(tab2)))
-#### shows a 77% accuracy on the decision tree
-
-
-###### Create a new decision tree using different features
-grid.newpage()
-training$MonthlyCharges <- factor(training$MonthlyCharges)
-training$PaymentMethod <- factor(training$PaymentMethod)
-training$InternetService <- factor(training$InternetService)
-tree2 <- ctree(Churn ~ MonthlyCharges + PaymentMethod + InternetService, training)
-# Plot the new decision tree
+tree2 <- ctree(result~fouls+corners+yellowCards+location+redCards, training_prep)
 plot(tree2)
 
-#Decision tree 2 accuracy
-levels(training$MonthlyCharges)
-levels(training$PaymentMethod)
-levels(training$InternetService)
 
-# Convert features to a factor variable with the same levels as in the training data
-testing$MonthlyCharges <- factor(testing$MonthlyCharges, levels = levels(training$MonthlyCharges))
-testing$PaymentMethod <- factor(testing$PaymentMethod, levels = levels(training$PaymentMethod))
-testing$InternetService <- factor(testing$InternetService, levels = levels(training$InternetService))
+####### AUC ROC CURVE 
+# Convert 'actual' and 'predictions' to factors
+actual <- factor(actual)
+predictions <- factor(predictions)
 
-# Create a confusion matrix to evaluate the accuracy of the predictions
-confusionMatrix(predicted, testing$Churn)
+# Create a list to store ROC objects for each class
+roc_curves <- list()
 
-#### the decision tree accuracy is 73% and sensitivity 80%
+# Calculate AUC-ROC curve for each class (one-vs-all) since there is no inference of D in the test data
+for (class_label in levels(actual)) {
+  binary_actual <- factor(ifelse(actual == class_label, "Positive", "Negative"), levels = c("Positive", "Negative"))
+  binary_predicted <- factor(ifelse(predictions == class_label, "Positive", "Negative"), levels = c("Positive", "Negative"))
+  
+  roc_obj <- roc(binary_actual, as.numeric(binary_predicted))
+  roc_curves[[class_label]] <- roc_obj
+}
+
+# Calculate macro-average AUC value
+auc_values <- sapply(roc_curves, function(roc_obj) roc_obj$auc)
+valid_auc_values <- auc_values[!is.na(auc_values) & sapply(auc_values, is.numeric)]
+macro_auc_value <- mean(valid_auc_values, na.rm = TRUE)
+
+# Print macro-average AUC value
+cat("Macro-average AUC-ROC value:", macro_auc_value, "\n")
+
+# Plot ROC curves for each class
+par(mfrow = c(1, length(roc_curves)))
+for (i in seq_along(roc_curves)) {
+  plot(roc_curves[[i]], col = rainbow(1), main = paste("ROC Curve for Class", levels(actual)[i]), lwd = 2)
+}
+
+# Add legend
+legend_labels <- sapply(roc_curves, function(roc_obj) paste("Class", roc_obj$levels[[2]], "AUC =", round(roc_obj$auc, 2)))
+legend("bottomright", legend = legend_labels, col = rainbow(length(roc_curves)), lwd = 2)
+
+###################################################################################################
+##### NEURAL NETWORKS 
+library(neuralnet)
+
+#Lets create a training Dataset
+glimpse(testing_prep)
+glimpse(training_prep)
+
+na.omit(training_prep)
+na.omit(testing_prep)
+
+# Convert all columns to numeric
+training_prep <- training_prep %>%
+  mutate(across(everything(), as.numeric))
+testing_prep <- testing_prep %>%
+  mutate(across(everything(), as.numeric))
+
+str(testing_prep)
+str(training_prep)
+
+# fit the neural network model on the train Data
+NN_train_results <- neuralnet(result ~ ., data = training_prep, hidden = 1, 
+                              act.fct = "logistic",
+                              linear.output = FALSE)
+plot(NN_train_results)
+glimpse(NN_train_results)
+
+
+testing_prep$result <- factor(testing_prep$result, c("1", "2","3"),
+                            label= c("W", "L","D"))
+
+Predict <- compute(NN_train_results, testing_prep)
+glimpse(Predict)
+Predict$net.result
+
+actual <- testing_prep$result
+
+# Extract the predicted probabilities for class "W"
+prob_W <- as.vector(Predict$net.result)
+
+# Convert probabilities to binary classes "W", "L", and "D"
+threshold <- 0.33
+pred <- ifelse(prob_W > threshold, "W", ifelse(prob_W < (1 - threshold), "L", "D"))
+
+
+# Create the confusion matrix
+conf_matrix <- table(actual, pred)
+print(conf_matrix)
+
+#Accuracy
+mean(pred ==actual)
+
+
